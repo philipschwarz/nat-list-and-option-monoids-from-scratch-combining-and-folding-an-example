@@ -1,6 +1,6 @@
 
 import Nat.*
-import Option.*
+import Option.{Some,None,some,none}
 import List.*
 import Semigroup.*
 
@@ -47,6 +47,8 @@ object List:
     case Seq() => Nil
     case _ => Cons(as.head,apply(as.tail*))
 
+  def nil[A]: List[A] = Nil
+
   def append[A](lhs: List[A], rhs: List[A]): List[A] = lhs match
     case Nil => rhs
     case Cons(a, rest) => Cons(a,append(rest,rhs))
@@ -65,8 +67,14 @@ enum Option[+A]:
   case Some(value:A)
 
 object Option:
+
   def none[A]: Option[A] = None
+
   def some[A](a:A): Option[A] = Some(a)
+
+  def fold[A](oa: Option[A])(using m: Monoid[A]): A = oa match
+    case None => m.unit
+    case Some(a) => a
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -116,7 +124,6 @@ given OptionMonoid[M](using m: Monoid[M]): Monoid[Option[M]] with
     Cons(one, Cons(two, Nil))
 
   val moreNumbers: List[Nat] = List(three, four)
-    //    Cons(three, Cons(four, Nil))
 
   val allNumbers: List[Nat] = Cons(one, Cons(two, Cons(three, Cons(four, Nil))))
 
@@ -133,7 +140,7 @@ given OptionMonoid[M](using m: Monoid[M]): Monoid[Option[M]] with
 
   // fold List[Nat] with (+,0)
   assert(fold(allNumbers) == one + two + three + four)
-  assert(fold(Nil:List[Nat]) == Zero)
+  assert(fold(nil[Nat]) == Zero)
   // fold List[Nat] with (*,1)
   assert(fold(allNumbers)(using natMultMonoid) == one * two * three * four)
   assert(fold(Nil:List[Nat])(using natMultMonoid) == one)
@@ -146,33 +153,16 @@ given OptionMonoid[M](using m: Monoid[M]): Monoid[Option[M]] with
   assert((some(two) |+| None) == Some(two))
   assert((none[Nat] |+| Some(two)) == Some(two))
   assert((some(two) |+| Some(three)) == Some(five))
+  assert((none[Nat] |+| None) == None)
+  assert(Option.fold(none[Nat] |+| None) == zero)
 
   val optionalNumbers: List[Option[Nat]] = List(Some(two),None,Some(three))
-//    Cons(Some(two),
-//      Cons(None,
-//        Cons(Some(three),
-//          Nil)))
 
   val moreOptionalNumbers: List[Option[Nat]] = List(Some(one),None,Some(four))
-//    Cons(Some(one),
-//      Cons(None,
-//        Cons(Some(four),
-//          Nil)))
 
   val allOptionalNumbers: List[Option[Nat]] = List(Some(two),None,Some(three),Some(one),None,Some(four))
-//    Cons(Some(two),
-//      Cons(None,
-//        Cons(Some(three),
-//          Cons(Some(one),
-//            Cons(None,
-//              Cons(Some(four),
-//                Nil))))))
 
   val yetMoreOptionalNumbers: List[Option[Nat]] = List(Some(five),None,Some(six))
-//    Cons(Some(five),
-//      Cons(None,
-//        Cons(Some(six),
-//          Nil)))
 
   // fold List of Option[Nat] with (Option[Nat],combine)
   assert(fold(optionalNumbers) == Some(five))
@@ -198,3 +188,4 @@ given OptionMonoid[M](using m: Monoid[M]): Monoid[Option[M]] with
 
   // combine three Option[List[Nat]] into a single Option[List[Nat]] by combining the lists using (List,combines)
   assert((some(List(one,two)) |+| None |+| Some(List(three,four))) == Some(List(one,two,three,four)))
+  assert(Option.fold(some(List(one,two)) |+| None |+| Some(List(three,four))) == List(one,two,three,four))
