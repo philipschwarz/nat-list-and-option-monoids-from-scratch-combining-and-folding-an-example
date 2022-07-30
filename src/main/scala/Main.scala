@@ -116,6 +116,10 @@ extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
 
   val allNumbers: List[Nat] = Cons(one, Cons(two, Cons(three, Cons(four, Nil))))
 
+  assert(List(one,two,three) == Cons(one, Cons(two, Cons(three, Nil))))
+
+  val yetMoreNumbers: List[Nat] = List(five,six)
+
   // use List[A]'s ++ function
   assert(numbers ++ moreNumbers == allNumbers)
   // use List monoid's combine function
@@ -125,8 +129,12 @@ extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
 
   // fold List[Nat] with (+,0)
   assert(fold(allNumbers) == one + two + three + four)
+  assert(fold(Nil:List[Nat]) == Zero)
   // fold List[Nat] with (*,1)
   assert(fold(allNumbers)(using natMultMonoid) == one * two * three * four)
+  assert(fold(Nil:List[Nat])(using natMultMonoid) == one)
+  // fold List[List[Nat] with (List,combine)
+  assert(fold(List(numbers,moreNumbers,yetMoreNumbers)) == List(one,two,three,four,five,six))
 
   // use Option monoid's combine function
   assert(summon[Monoid[Option[Nat]]].combine(Some(two),None) == Some(two))
