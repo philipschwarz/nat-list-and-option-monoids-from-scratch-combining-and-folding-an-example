@@ -16,6 +16,10 @@ extension (m: Nat)
   def +(n: Nat): Nat = n match
     case Zero => m
     case Succ(n) => Succ(m + n)
+  @targetName("times")
+  def *(n: Nat): Nat = n match
+    case Zero => Zero
+    case Succ(n) => m * n + m
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -53,6 +57,10 @@ given Monoid[Nat] with
   def zero: Nat = Zero
   def combine(x: Nat, y: Nat): Nat = x + y
 
+val natMultMonoid : Monoid[Nat] = new Monoid[Nat]:
+  def zero: Nat = Succ(Zero)
+  def combine(x: Nat, y: Nat): Nat = x * y
+
 given ListMonoid[A]: Monoid[List[A]] with
   def zero: List[A] = Nil
   def combine(lhs: List[A], rhs: List[A]): List[A] = lhs ++ rhs
@@ -85,9 +93,13 @@ extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
 
   assert(zero + one == one)
   assert(one + zero == one)
-  assert(one + two == three)
 
-  val ten = five + five
+  assert(one + two == three)
+  assert(one + two + three == six)
+
+  val ten = one + two + three + four
+
+  assert(two * three == six)
 
   val numbers: List[Nat] =
     Cons(one, Cons(two, Nil))
@@ -95,10 +107,17 @@ extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
   val moreNumbers: List[Nat] =
     Cons(three, Cons(four, Nil))
 
-  val allNumbers = Cons(one, Cons(two, Cons(three, Cons(four, Nil))))
+  val allNumbers: List[Nat] = Cons(one, Cons(two, Cons(three, Cons(four, Nil))))
 
   assert(numbers ++ moreNumbers == allNumbers)
 
+  // fold List[Nat] with (+,0)
+  assert(fold(allNumbers) == one + two + three + four)
+  // fold List[Nat] with (*,1)
+  assert(fold(allNumbers)(using natMultMonoid) == one * two * three * four)
+
+  assert((Some(two) |+| None) == Some(two))
+  assert(((None:Option[Nat]) |+| Some(two)) == Some(two))
   assert((Some(two) |+| Some(three)) == Some(five))
 
   val optionalNumbers: List[Option[Nat]] =
