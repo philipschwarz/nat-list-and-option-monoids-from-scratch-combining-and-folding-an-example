@@ -2,6 +2,7 @@
 import Nat.*
 import Option.*
 import List.*
+import Semigroup.*
 
 import scala.annotation.targetName
 
@@ -23,22 +24,41 @@ extension (m: Nat)
 
 ////////////////////////////////////////////////////////////////////////////
 
+sealed trait Semigroup[A]:
+  def combine(x: A, y: A): A
+
+object Semigroup:
+
+  extension [A](lhs: A)(using m: Semigroup[A])
+    @targetName("semigroupcombine")
+    def |+|(rhs: A): A = m.combine(lhs,rhs)
+
+sealed trait Monoid[A] extends Semigroup[A]:
+  def unit: A
+
+////////////////////////////////////////////////////////////////////////////
+
 enum List[+A]:
   case Cons(head: A, tail: List[A])
   case Nil
 
 object List:
+
   def apply[A](as: A*): List[A] = as match
     case Seq() => Nil
     case _ => Cons(as.head,apply(as.tail*))
 
-def append[A](lhs: List[A], rhs: List[A]): List[A] = lhs match
-  case Nil => rhs
-  case Cons(a, rest) => Cons(a,append(rest,rhs))
+  def append[A](lhs: List[A], rhs: List[A]): List[A] = lhs match
+    case Nil => rhs
+    case Cons(a, rest) => Cons(a,append(rest,rhs))
 
-extension [A](lhs: List[A])
-  @targetName("plusplus")
-  def ++(rhs: List[A]): List[A] = append(lhs,rhs)
+  extension [A](lhs: List[A])
+    @targetName("plusplus")
+    def ++(rhs: List[A]): List[A] = append(lhs,rhs)
+
+  def fold[A](as: List[A])(using ma: Monoid[A]): A = as match
+    case Nil => ma.unit
+    case Cons(a,rest) => ma.combine(a,fold(rest))
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -46,17 +66,11 @@ enum Option[+A]:
   case None
   case Some(value:A)
 
+object Option:
+  def none[A]: Option[A] = None
+  def some[A](a:A): Option[A] = Some(a)
+
 ////////////////////////////////////////////////////////////////////////////
-
-sealed trait Semigroup[A]:
-  def combine(x: A, y: A): A
-
-sealed trait Monoid[A] extends Semigroup[A]:
-  def unit: A
-
-extension [A](lhs: A)(using m: Monoid[A])
-  @targetName("monoidtiefighter")
-  def |+|(rhs: A): A = m.combine(lhs,rhs)
 
 given Monoid[Nat] with
   def unit: Nat = Zero
@@ -70,10 +84,6 @@ given ListMonoid[A]: Monoid[List[A]] with
   def unit: List[A] = Nil
   def combine(lhs: List[A], rhs: List[A]): List[A] = lhs ++ rhs
 
-def fold[A](as: List[A])(using ma: Monoid[A]): A = as match
-  case Nil => ma.unit
-  case Cons(a,rest) => ma.combine(a,fold(rest))
-
 given OptionMonoid[M](using m: Monoid[M]): Monoid[Option[M]] with
   def unit: Option[M] = None
   def combine(ox: Option[M], oy: Option[M]): Option[M] = (ox,oy) match
@@ -81,14 +91,10 @@ given OptionMonoid[M](using m: Monoid[M]): Monoid[Option[M]] with
     case (_, None) => ox
     case (Some(x),Some(y)) => Some(x |+| y)
 
-extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
-  @targetName("optionmonoidtiefighter")
-  def |+|(rhs: Option[A]): Option[A] = m.combine(lhs,rhs)
-
 @main def main: Unit =
 
-  val unit = Zero
-  val one = Succ(unit)
+  val zero = Zero
+  val one = Succ(zero)
   val two = Succ(one)
 
   val three = Succ(two)
@@ -96,8 +102,8 @@ extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
   val five = Succ(four)
   val six = Succ(five)
 
-  assert(unit + one == one)
-  assert(one + unit == one)
+  assert(zero + one == one)
+  assert(one + zero == one)
 
   assert(one + two == three)
   assert(one + two + three == six)
@@ -139,9 +145,9 @@ extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
   // use Option monoid's combine function
   assert(summon[Monoid[Option[Nat]]].combine(Some(two),None) == Some(two))
   // use Option monoid's infix combine operator
-  assert((Some(two) |+| None) == Some(two))
-  assert(((None:Option[Nat]) |+| Some(two)) == Some(two))
-  assert((Some(two) |+| Some(three)) == Some(five))
+  assert((some(two) |+| None) == Some(two))
+  assert((none[Nat] |+| Some(two)) == Some(two))
+  assert((some(two) |+| Some(three)) == Some(five))
 
   val optionalNumbers: List[Option[Nat]] = List(Some(two),None,Some(three))
 //    Cons(Some(two),
@@ -193,4 +199,4 @@ extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
   assert(fold(fold(listsOfOptionalNumbers)) == Some(twentyOne))
 
   // combine three Option[List[Nat]] into a single Option[List[Nat]] by combining the lists using (List,combines)
-  assert((Some(List(one,two)) |+| None |+| Some(List(three,four))) == Some(List(one,two,three,four)))
+  assert((some(List(one,two)) |+| None |+| Some(List(three,four))) == Some(List(one,two,three,four)))
