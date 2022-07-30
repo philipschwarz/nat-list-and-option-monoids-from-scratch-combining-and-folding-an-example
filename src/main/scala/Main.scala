@@ -1,5 +1,9 @@
 
-import Nat.*, Option.*, List.*
+import Nat.*
+import Option.*
+import List.*
+
+import scala.annotation.targetName
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -7,12 +11,11 @@ enum Nat:
   case Zero
   case Succ(n: Nat)
 
-val `(+)`: Nat => Nat => Nat = m =>
-  case Zero => m
-  case Succ(n) => Succ(m + n)
-
 extension (m: Nat)
-  def +(n: Nat): Nat = `(+)`(m)(n)
+  @targetName("plus")
+  def +(n: Nat): Nat = n match
+    case Zero => m
+    case Succ(n) => Succ(m + n)
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -25,6 +28,7 @@ def append[A](lhs: List[A], rhs: List[A]): List[A] = lhs match
   case Cons(a, rest) => Cons(a,append(rest,rhs))
 
 extension [A](lhs: List[A])
+  @targetName("plusplus")
   def ++(rhs: List[A]): List[A] = append(lhs,rhs)
 
 ////////////////////////////////////////////////////////////////////////////
@@ -42,6 +46,7 @@ sealed trait Monoid[A] extends Semigroup[A]:
   def zero: A
 
 extension [A](lhs: A)(using m: Monoid[A])
+  @targetName("monoidtiefighter")
   def |+|(rhs: A): A = m.combine(lhs,rhs)
 
 given Monoid[Nat] with
@@ -64,6 +69,7 @@ given OptionMonoid[M](using m: Monoid[M]): Monoid[Option[M]] with
     case (Some(x),Some(y)) => Some(x |+| y)
 
 extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
+  @targetName("optionmonoidtiefighter")
   def |+|(rhs: Option[A]): Option[A] = m.combine(lhs,rhs)
 
 @main def main: Unit =
@@ -71,13 +77,14 @@ extension [A](lhs: Option[A])(using m: Monoid[Option[A]])
   val zero = Zero
   val one = Succ(zero)
   val two = Succ(one)
+
   val three = Succ(two)
   val four = Succ(three)
   val five = Succ(four)
   val six = Succ(five)
 
-  assert(one + zero == one)
   assert(zero + one == one)
+  assert(one + zero == one)
   assert(one + two == three)
 
   val ten = five + five
