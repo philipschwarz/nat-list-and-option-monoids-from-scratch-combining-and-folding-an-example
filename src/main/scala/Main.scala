@@ -13,11 +13,11 @@ enum Nat:
   case Succ(n: Nat)
 
 extension (m: Nat)
-  @targetName("plus")
+
   def +(n: Nat): Nat = n match
     case Zero => m
     case Succ(n) => Succ(m + n)
-  @targetName("times")
+
   def *(n: Nat): Nat = n match
     case Zero => Zero
     case Succ(n) => m * n + m
@@ -30,7 +30,6 @@ sealed trait Semigroup[A]:
 object Semigroup:
 
   extension [A](lhs: A)(using m: Semigroup[A])
-    @targetName("semigroupcombine")
     def |+|(rhs: A): A = m.combine(lhs,rhs)
 
 sealed trait Monoid[A] extends Semigroup[A]:
@@ -53,7 +52,6 @@ object List:
     case Cons(a, rest) => Cons(a,append(rest,rhs))
 
   extension [A](lhs: List[A])
-    @targetName("plusplus")
     def ++(rhs: List[A]): List[A] = append(lhs,rhs)
 
   def fold[A](as: List[A])(using ma: Monoid[A]): A = as match
