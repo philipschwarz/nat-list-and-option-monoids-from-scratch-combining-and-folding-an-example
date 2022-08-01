@@ -56,9 +56,12 @@ object List:
   extension [A](lhs: List[A])
     def ++(rhs: List[A]): List[A] = append(lhs,rhs)
 
-  def fold[A](as: List[A])(using ma: Monoid[A]): A = as match
-    case Nil => ma.unit
-    case Cons(a,rest) => ma.combine(a,fold(rest))
+  def foldRight[A,B](as: List[A], b: B, f: (A, B) => B): B = as match
+    case Nil => b
+    case Cons(a,rest) => f(a,foldRight(rest,b,f))
+
+  def fold[A](as: List[A])(using ma: Monoid[A]): A =
+    foldRight(as, ma.unit, (a,b) => ma.combine(a,b))
 
 ////////////////////////////////////////////////////////////////////////////
 
