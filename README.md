@@ -1,0 +1,2 @@
+Code for [Nat, List and Option Monoids - From scratch - Combining and Folding - An example](https://www.slideshare.net/pjschwarz/nat-list-and-option-monoids-from-scratch-combining-and-folding-an-example)
+![Nat, List and Option Monoids - From scratch - Combining and Folding - An example](front-slide.png?raw=true )
